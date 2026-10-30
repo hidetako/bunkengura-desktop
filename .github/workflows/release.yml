@@ -1,11 +1,16 @@
 name: release
 
-# インストーラを作って Releases に貼る。
+# インストーラを作って Releases に貼る。次のいずれかで動く。
 #   - v1.2.3 のようなタグを push したとき
-#   - Actions 画面の「Run workflow」から手動で動かしたとき（package.json の version を使う）
+#   - release ブランチへ push したとき
+#   - Actions 画面の「Run workflow」を押したとき
+# タグ以外のときは package.json の version をリリース名に使う。
 on:
   push:
     tags: ['v*']
+    # タグを押せない環境から配布物を作るための経路。
+    # release ブランチへ push すると package.json の version でリリースする。
+    branches: [release]
   workflow_dispatch:
 
 permissions:
