@@ -1,0 +1,395 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 単語帳の出典文ジャンプ時に、該当単語をハイライト（CSS Custom Highlight API） */
+::highlight(vocab-hit) {
+  background-color: #ffe08a;
+  color: #000;
+  /* ハイコントラスト(forced-colors)時もハイライト色を維持。
+     未指定だとOSが背景色を無効化し、登録済みでも一切塗られない */
+  forced-color-adjust: none;
+}
+
+/* 単語帳に登録済みの単語を本文中で印付け（オレンジの実線下線＋淡い地色。手動マーカーとは別物） */
+::highlight(vocab-word) {
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-color: #ff9100;
+  text-decoration-thickness: 4px;
+  text-underline-offset: 3px;
+  background-color: rgba(255, 145, 0, 0.14);
+  forced-color-adjust: none;
+}
+
+/* 対訳帳に保存済みの文を本文中で印付け（淡い緑の地色。手動マーカー・単語印とは別レイヤ） */
+::highlight(trans-sentence) {
+  background-color: rgba(46, 204, 113, 0.22);
+  forced-color-adjust: none;
+}
+
+/* ページ内検索のヒット（別レイヤ。単語印・対訳印より手前に塗る）。
+   既存の印（橙=単語帳 / 緑=対訳帳 / 赤黄青=手動マーカー）と区別できる紫系にする */
+::highlight(search-hit) {
+  background-color: rgba(124, 77, 255, 0.28);
+  forced-color-adjust: none;
+}
+/* 現在のヒットだけは濃く塗って、何番目を見ているかを分かるようにする */
+::highlight(search-current) {
+  background-color: #7c4dff;
+  color: #ffffff;
+  forced-color-adjust: none;
+}
+
+/* 本文マーカー（赤/黄/青 × ラインマーカー/下線）。CSS Custom Highlight API */
+/* ラインマーカー：文字に重ねる蛍光ペン風（半透明背景） */
+::highlight(mk-red-marker) {
+  background-color: rgba(255, 82, 82, 0.4);
+  forced-color-adjust: none;
+}
+::highlight(mk-yellow-marker) {
+  background-color: rgba(255, 214, 0, 0.5);
+  forced-color-adjust: none;
+}
+::highlight(mk-blue-marker) {
+  background-color: rgba(64, 156, 255, 0.4);
+  forced-color-adjust: none;
+}
+/* 下線：太めのアンダーライン（文字色は変えない） */
+::highlight(mk-red-underline) {
+  text-decoration-line: underline;
+  text-decoration-color: #ff1744;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+  forced-color-adjust: none;
+}
+::highlight(mk-yellow-underline) {
+  text-decoration-line: underline;
+  text-decoration-color: #ffc400;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+  forced-color-adjust: none;
+}
+::highlight(mk-blue-underline) {
+  text-decoration-line: underline;
+  text-decoration-color: #2979ff;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+  forced-color-adjust: none;
+}
+
+/* ===== アーバン×ゴージャス・テーマ =====
+   グラファイト基調 + シャンパンゴールドの差し色。白いカードを柔らかな陰影で浮かせ、
+   ボタンや見出しに上質な質感を与える。色は CSS 変数で一元管理。 */
+:root {
+  --color-accent: #1d2433;       /* ディープ・グラファイトネイビー（主役） */
+  --color-accent-2: #2c3650;     /* グラデ用の少し明るいネイビー */
+  --color-gold: #b8945a;         /* シャンパンゴールド（差し色） */
+  --color-gold-soft: #d8be8f;
+  --color-bg: #eceef2;           /* プラチナグレーの地 */
+  --color-card: #ffffff;
+  --color-text: #171a21;         /* インク */
+  --color-border: #e2e4ea;       /* ヘアライン */
+  --color-muted: #595f6b;        /* AA(4.5:1)を満たす濃さに調整 */
+  --badge-text: #ffffff;         /* アクセント地のバッジ文字色 */
+  /* 状態色（明所）。テーマで反転させるため変数化する */
+  --color-memo: #9a3412;         /* メモの橙 */
+  --color-danger: #b91c1c;       /* エラー・削除 */
+  --color-success: #166534;      /* 成功・接続OK */
+  --color-warn: #854d0e;         /* 注意・ハイライト */
+  --shadow-sm: 0 1px 2px rgba(20, 24, 33, 0.06), 0 1px 1px rgba(20, 24, 33, 0.04);
+  --shadow-md: 0 6px 18px -6px rgba(20, 24, 33, 0.18), 0 2px 6px -2px rgba(20, 24, 33, 0.10);
+  --shadow-lg: 0 18px 40px -12px rgba(20, 24, 33, 0.28);
+}
+
+/* 配色テーマ（メイン画面の切替用）。変数ごと差し替えるので
+   .pane-title / .btn / .input / .card など全部品が追従する */
+.theme-gray {
+  --color-bg: #dfe1e6;
+  --color-card: #eef0f3;
+  --color-border: #cfd3db;
+}
+.theme-beige {
+  --color-bg: #efe9da;
+  --color-card: #f8f4e9;
+  --color-border: #e2dbc6;
+  --color-muted: #696352;        /* AA(4.5:1)を満たす濃さに調整 */
+}
+
+.dark {
+  --color-accent: #c9a96a;       /* 暗所では金を主役に */
+  --color-accent-2: #b8945a;
+  --color-gold: #d8be8f;
+  --color-gold-soft: #e7d6b3;
+  --color-bg: #14161c;           /* ほぼ黒のインク */
+  --color-card: #1d212b;
+  --color-text: #e9ecf2;
+  --color-border: #2b3140;
+  --color-muted: #98a0b0;
+  --badge-text: #14161c;         /* 暗所では金地に濃色文字で視認性確保 */
+  /* 状態色（暗所）。濃い色のままだと暗背景に沈むため明るい側へ反転 */
+  --color-memo: #fb923c;
+  --color-danger: #f87171;
+  --color-success: #4ade80;
+  --color-warn: #fbbf24;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 22px -8px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 20px 44px -12px rgba(0, 0, 0, 0.7);
+}
+
+html, body {
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(184, 148, 90, 0.10), transparent 60%),
+    radial-gradient(1000px 600px at -10% 110%, rgba(29, 36, 51, 0.08), transparent 55%),
+    var(--color-bg);
+  background-attachment: fixed;
+  color: var(--color-text);
+  font-family: 'Meiryo', 'Yu Gothic UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 1px;
+}
+
+/* スクロールバー（Webkit） */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(var(--color-border), var(--color-muted));
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
+  background-clip: padding-box;
+}
+
+/* 共通カード：白い面を柔らかな陰影で浮かせる */
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
+}
+.card:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: color-mix(in srgb, var(--color-gold) 45%, var(--color-border));
+}
+
+/* 入力共通 */
+.input {
+  background: var(--color-card);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 13px;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.input:focus {
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 3px rgba(184, 148, 90, 0.18);
+  outline: none;
+}
+
+/* ボタン共通：上質なチップ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 13px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform .12s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease, color .18s ease;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+.btn:hover {
+  border-color: color-mix(in srgb, var(--color-gold) 55%, var(--color-border));
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.btn:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* 主役ボタン：グラファイトのグラデ + ゴールドのヘアライン */
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-accent-2), var(--color-accent));
+  border: 1px solid color-mix(in srgb, var(--color-gold) 60%, var(--color-accent));
+  color: #fff;
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  letter-spacing: 0.02em;
+}
+.btn-primary:hover {
+  filter: brightness(1.08);
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 0 0 3px rgba(184, 148, 90, 0.20);
+  border-color: var(--color-gold);
+}
+.dark .btn-primary { color: #14161c; }
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.btn-ghost:hover { box-shadow: none; background: color-mix(in srgb, var(--color-muted) 12%, transparent); }
+
+/* ===== ヘッダー内の部品はテーマに依らず常にグラファイト調 =====
+   （白いカード色の .btn / .input が紺のバーの上で白浮きするのを解消） */
+
+/* 選択中の行：テーマを問わず金のヘアライン＋淡い金の地で示す */
+.row-selected {
+  background: color-mix(in srgb, var(--color-gold) 16%, transparent);
+  box-shadow: inset 3px 0 0 var(--color-gold);
+}
+
+/* アクセント地のバッジ（本文/★/タグ）。ダークでは文字を濃色に */
+.badge-accent {
+  background: var(--color-accent);
+  color: var(--badge-text);
+}
+
+/* マークアップ調 */
+mark.hl {
+  background: linear-gradient(transparent 55%, rgba(184, 148, 90, 0.45) 0);
+  padding: 0 2px;
+}
+.dark mark.hl {
+  background: linear-gradient(transparent 55%, rgba(201, 169, 106, 0.45) 0);
+  color: #fff;
+}
+
+/* セクションヘッダ：細いゴールドの罫線をアクセントに */
+.pane-title {
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-card) 92%, var(--color-bg)), var(--color-card));
+  position: relative;
+}
+/* リーダー上部ツールバー：上下幅を最小限に詰めるコンパクト版 */
+.pane-title.compact {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+.pane-title.compact .btn {
+  padding: 2px 9px;
+  font-size: 12px;
+  border-radius: 7px;
+}
+.pane-title.compact .input {
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+/* .pane-title の position:relative が Tailwind の .sticky を同詳細度・後勝ちで
+   上書きしてしまい、ツールバーがスクロールで流れて消えるバグの修正。
+   sticky 指定時はそちらを優先する（sticky も positioned なので ::after はそのまま効く） */
+.pane-title.sticky {
+  position: sticky;
+}
+.pane-title::after {
+  content: '';
+  position: absolute;
+  left: 0; bottom: -1px;
+  width: 56px; height: 2px;
+  background: linear-gradient(90deg, var(--color-gold), transparent);
+}
+
+/* テキスト選択時のカーソル */
+.selectable {
+  user-select: text;
+  cursor: text;
+}
+
+/* 文献詳細ペインの常時スクロールバー（医療従事者向けに視認性UP） */
+.detail-scroll {
+  scrollbar-gutter: stable;
+}
+.detail-scroll::-webkit-scrollbar {
+  width: 12px;
+}
+.detail-scroll::-webkit-scrollbar-track {
+  background: var(--color-bg);
+  border-left: 1px solid var(--color-border);
+}
+.detail-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-muted);
+  border-radius: 6px;
+  border: 2px solid var(--color-bg);
+  min-height: 30px;
+}
+.detail-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+/* Firefox */
+.detail-scroll {
+  scrollbar-width: auto;
+  scrollbar-color: var(--color-muted) var(--color-bg);
+}
+
+/* 縦書きリーダーの横スクロールバー：太く・つまみやすく */
+.reader-hscroll::-webkit-scrollbar {
+  height: 16px;
+}
+.reader-hscroll::-webkit-scrollbar-track {
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-border);
+}
+.reader-hscroll::-webkit-scrollbar-thumb {
+  background: var(--color-muted);
+  border-radius: 8px;
+  border: 3px solid var(--color-bg);
+  min-width: 40px;
+}
+.reader-hscroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+/* Firefox */
+.reader-hscroll {
+  scrollbar-width: auto;
+  scrollbar-color: var(--color-muted) var(--color-bg);
+}
+
+@keyframes bunken-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* dot 形式のフォールバック（プログレス感アップ） */
+.bunken-dots::after {
+  content: '';
+  animation: bunken-dots 1.2s steps(4, end) infinite;
+}
+@keyframes bunken-dots {
+  0%, 20% { content: ''; }
+  40% { content: '.'; }
+  60% { content: '..'; }
+  80%, 100% { content: '...'; }
+}

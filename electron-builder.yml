@@ -1,0 +1,42 @@
+appId: jp.bunkengura.desktop
+productName: Bunkengura
+# 成果物のファイル名は ASCII にする（日本語名はブラウザやメールで壊れることがあるため）
+artifactName: Bunkengura-Setup-${version}.${ext}
+copyright: Copyright (c) 2026 hidetako
+
+directories:
+  output: release
+  buildResources: build
+
+# ビルド済みの out/ と、依存解決のための package.json だけを同梱する
+files:
+  - out/**
+  - package.json
+
+win:
+  icon: build/icon.png
+  target:
+    - target: nsis
+      arch: [x64]
+
+nsis:
+  # 管理者権限なしで入れられるよう、ユーザー単位のインストールにする
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: 文献蔵
+  installerLanguages: [ja_JP]
+  language: 1041
+
+# 参考用（配布はWindowsのみ。手元で動かしたい人向けに残す）
+linux:
+  icon: build/icon.png
+  target: [AppImage]
+  category: Office
+
+mac:
+  icon: build/icon.png
+  target: [dmg]
+  category: public.app-category.productivity
