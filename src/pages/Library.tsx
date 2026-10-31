@@ -2,14 +2,17 @@ import { useState } from 'react';
 import type { BookMeta } from '@shared/types';
 import { api, errText } from '../lib/bridge';
 import { Spinner } from '../components/Spinner';
+import { OcrModal } from '../components/OcrModal';
 
 export function Library({
   books,
+  ocrModel,
   onReload,
   onOpen,
   onError,
 }: {
   books: BookMeta[];
+  ocrModel: string;
   onReload: () => void;
   onOpen: (id: string) => void;
   onError: (msg: string) => void;
@@ -17,19 +20,20 @@ export function Library({
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState({ title: '', author: '' });
+  const [ocrFor, setOcrFor] = useState<BookMeta | null>(null);
 
   const importPdf = async () => {
     setBusy(true);
     try {
       const added = await api.books.pickAndImport();
       onReload();
-      // テキスト層の無いPDF（紙のスキャンなど）は本文が取れない。黙って空の本が増えると
-      // 原因が分からないので、その場で知らせる。
-      const empty = added.filter((b) => b.pages === 0);
-      if (empty.length > 0) {
+      // 文字情報を持たないPDFは本文が空になる。黙って空の本が増えると原因が分からないので、
+      // その場で知らせて「画像から書き起こす」へ誘導する。
+      const needOcr = added.filter((b) => b.source === 'none');
+      if (needOcr.length > 0) {
         onError(
-          `次のPDFから本文を取り出せませんでした（文字情報を持たないスキャンPDFの可能性があります）: ` +
-            empty.map((b) => b.title).join('、'),
+          `次のPDFには文字情報がありませんでした: ${needOcr.map((b) => b.title).join('、')}。` +
+            `本の「画像から書き起こす」を押すと、ページを画像として読み取って本文にできます。`,
         );
       }
     } catch (e) {
@@ -92,6 +96,15 @@ export function Library({
         </div>
       )}
 
+      {ocrFor && (
+        <OcrModal
+          book={ocrFor}
+          defaultModel={ocrModel}
+          onClose={() => setOcrFor(null)}
+          onDone={onReload}
+        />
+      )}
+
       <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
         {books.map((b) => (
           <div key={b.id} className="card p-3 flex flex-col gap-2">
@@ -134,10 +147,27 @@ export function Library({
                     {b.pages} ページ・{b.kind}
                     {b.last_page > 0 && ` ・しおり ${b.last_page}p`}
                   </div>
+                  <div>
+                    {b.source === 'pdf' && '本文: PDFの文字情報から'}
+                    {b.source === 'ocr' && '本文: 画像から書き起こし'}
+                    {b.source === 'none' && (
+                      <span style={{ color: 'var(--color-warn)' }}>本文がまだありません</span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex gap-1 flex-wrap">
-                  <button className="btn btn-primary" onClick={() => onOpen(b.id)}>
+                  <button
+                    className={b.source === 'none' ? 'btn' : 'btn btn-primary'}
+                    onClick={() => onOpen(b.id)}
+                  >
                     読む
+                  </button>
+                  <button
+                    className={b.source === 'none' ? 'btn btn-primary' : 'btn'}
+                    onClick={() => setOcrFor(b)}
+                    title="ページを画像として読み取り、本文を書き起こします"
+                  >
+                    画像から書き起こす
                   </button>
                   <button className="btn" onClick={() => startEdit(b)}>
                     書名を直す

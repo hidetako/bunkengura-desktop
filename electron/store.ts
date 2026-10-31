@@ -10,7 +10,7 @@ import { app, safeStorage } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { BookMeta, Marker, Settings, TransMemo, VocabEntry } from '../shared/types';
-import { DEFAULT_MODEL } from '../shared/types';
+import { DEFAULT_MODEL, DEFAULT_OCR_MODEL } from '../shared/types';
 
 const root = () => app.getPath('userData');
 const booksDir = () => path.join(root(), 'books');
@@ -53,6 +53,15 @@ export async function readBookText(id: string): Promise<string> {
   }
 }
 
+export async function readBookPdf(id: string): Promise<Buffer> {
+  return fs.readFile(bookPdfPath(id));
+}
+
+export async function writeBookText(id: string, text: string): Promise<void> {
+  await ensureDirs();
+  await fs.writeFile(bookTextPath(id), text, 'utf8');
+}
+
 export async function writeBookFiles(id: string, text: string, pdf: Buffer): Promise<void> {
   await ensureDirs();
   await fs.writeFile(bookTextPath(id), text, 'utf8');
@@ -75,6 +84,7 @@ export const saveMarkers = (m: Marker[]) => writeJson('markers.json', m);
 // ===== 設定 =====
 interface StoredSettings {
   model: string;
+  ocrModel: string;
   medicalMode: boolean;
   /** safeStorage で暗号化した APIキー（base64）。OSの鍵束に紐づくため他端末では復号できない */
   apiKeyEnc?: string;
@@ -82,7 +92,7 @@ interface StoredSettings {
   apiKeyPlain?: string;
 }
 
-const defaults: StoredSettings = { model: DEFAULT_MODEL, medicalMode: true };
+const defaults: StoredSettings = { model: DEFAULT_MODEL, ocrModel: DEFAULT_OCR_MODEL, medicalMode: true };
 
 const readSettings = () => readJson<StoredSettings>('settings.json', defaults);
 
@@ -91,11 +101,14 @@ export async function getSettings(): Promise<Settings> {
   return {
     hasApiKey: Boolean(s.apiKeyEnc || s.apiKeyPlain),
     model: s.model || DEFAULT_MODEL,
+    ocrModel: s.ocrModel || DEFAULT_OCR_MODEL,
     medicalMode: s.medicalMode ?? true,
   };
 }
 
-export async function updateSettings(patch: Partial<Pick<Settings, 'model' | 'medicalMode'>>): Promise<Settings> {
+export async function updateSettings(
+  patch: Partial<Pick<Settings, 'model' | 'ocrModel' | 'medicalMode'>>,
+): Promise<Settings> {
   const s = await readSettings();
   await writeJson('settings.json', { ...s, ...patch });
   return getSettings();

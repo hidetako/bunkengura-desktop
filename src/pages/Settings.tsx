@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Settings } from '@shared/types';
-import { MODEL_OPTIONS } from '@shared/types';
+import { MODEL_OPTIONS, estimateOcrCost } from '@shared/types';
 import { api, errText } from '../lib/bridge';
 
 export function SettingsPage({
@@ -45,7 +45,7 @@ export function SettingsPage({
     }
   };
 
-  const update = async (patch: Partial<Pick<Settings, 'model' | 'medicalMode'>>) => {
+  const update = async (patch: Partial<Pick<Settings, 'model' | 'ocrModel' | 'medicalMode'>>) => {
     try {
       onChange(await api.settings.update(patch));
     } catch (e) {
@@ -109,7 +109,7 @@ export function SettingsPage({
       </section>
 
       <section className="card p-4 mb-4">
-        <h2 className="font-semibold mb-1">使うモデル</h2>
+        <h2 className="font-semibold mb-1">辞書・翻訳に使うモデル</h2>
         <p className="text-sm mb-3" style={{ color: 'var(--color-muted)' }}>
           賢いほど訳は丁寧ですが、料金と待ち時間は増えます。辞書引きを何度も使うなら Haiku が軽快です。
         </p>
@@ -131,6 +131,37 @@ export function SettingsPage({
               </span>
             </label>
           ))}
+        </div>
+      </section>
+
+      <section className="card p-4 mb-4">
+        <h2 className="font-semibold mb-1">画像PDFの書き起こしに使うモデル</h2>
+        <p className="text-sm mb-3" style={{ color: 'var(--color-muted)' }}>
+          紙をスキャンしたPDFは、ページを画像として読み取って本文にします。ページ数のぶんだけ呼ぶので、
+          辞書・翻訳とは別に選べるようにしています。和書の密な縦書きなら Sonnet 以上が無難です。
+          （取り込みのたびに、その本の見積もりを出したうえで選び直せます）
+        </p>
+        <div className="flex flex-col gap-2">
+          {MODEL_OPTIONS.map((m) => {
+            const e = estimateOcrCost(300, m.id);
+            return (
+              <label key={m.id} className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="ocrModel"
+                  checked={settings.ocrModel === m.id}
+                  onChange={() => update({ ocrModel: m.id })}
+                  style={{ marginTop: 3 }}
+                />
+                <span>
+                  <span className="font-semibold">{m.label}</span>
+                  <span className="block text-xs" style={{ color: 'var(--color-muted)' }}>
+                    300ページの本1冊でおよそ {Math.round(e.jpy).toLocaleString()} 円
+                  </span>
+                </span>
+              </label>
+            );
+          })}
         </div>
       </section>
 

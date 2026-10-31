@@ -1,6 +1,7 @@
 // Claude 呼び出し。メインプロセス(Node)で動かすので、APIキーは画面側に出ず CORS も関係ない。
 import Anthropic from '@anthropic-ai/sdk';
 import type { DictionaryResult } from '../shared/types';
+import { toJapaneseError } from './anthropic-errors';
 
 let cached: { key: string; client: Anthropic } | null = null;
 
@@ -9,29 +10,6 @@ function clientFor(apiKey: string): Anthropic {
   const client = new Anthropic({ apiKey });
   cached = { key: apiKey, client };
   return client;
-}
-
-/** 例外をそのまま画面に出すと分かりにくいので、日本語の対処可能な文言にする。 */
-function toJapaneseError(e: unknown): Error {
-  if (e instanceof Anthropic.AuthenticationError) {
-    return new Error('APIキーが正しくありません。設定画面で入力し直してください。');
-  }
-  if (e instanceof Anthropic.PermissionDeniedError) {
-    return new Error('このAPIキーでは利用が許可されていません。Anthropic コンソールで権限をご確認ください。');
-  }
-  if (e instanceof Anthropic.RateLimitError) {
-    return new Error('呼び出しが混み合っています。少し待ってからもう一度お試しください。');
-  }
-  if (e instanceof Anthropic.BadRequestError) {
-    return new Error(`リクエストが受け付けられませんでした: ${e.message}`);
-  }
-  if (e instanceof Anthropic.APIConnectionError) {
-    return new Error('Anthropic に接続できませんでした。ネットワーク接続をご確認ください。');
-  }
-  if (e instanceof Anthropic.APIError) {
-    return new Error(`APIエラー (${e.status}): ${e.message}`);
-  }
-  return e instanceof Error ? e : new Error(String(e));
 }
 
 /** 応答から本文テキストだけを連結して取り出す（thinking ブロックは混ぜない）。 */

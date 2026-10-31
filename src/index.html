@@ -5,7 +5,7 @@
     <!-- ローカルのファイルとAnthropic API以外へは出さない -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; script-src 'self'; worker-src 'self' blob:; connect-src 'self' blob: data:"
     />
     <title>文献蔵</title>
   </head>

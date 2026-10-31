@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import * as store from './store';
 import { dictionaryLookup, translateText } from './claude';
 import { extractPdfText, guessKind } from './pdf';
+import { assemble, looksLikeImagePdf, transcribePages } from './ocr';
 import type { BookMeta, Marker, TransMemo, VocabEntry } from '../shared/types';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -85,16 +86,23 @@ function register() {
       const { title, text, pages } = await extractPdfText(new Uint8Array(buf));
       const id = uid();
       await store.writeBookFiles(id, text, buf);
+      const kind = guessKind(text);
+      const imageOnly = looksLikeImagePdf(text, pages);
       const meta: BookMeta = {
         id,
         title: title || path.basename(p, path.extname(p)),
         author: '',
         filename: path.basename(p),
         pages,
-        kind: guessKind(text),
+        kind,
         created_at: nowIso(),
         updated_at: nowIso(),
         last_page: 0,
+        // テキスト層がほぼ無ければ、本文は未取得として書き起こしを促す
+        source: imageOnly ? 'none' : 'pdf',
+        // 和書は縦書きが普通なので既定にする（画面でいつでも切り替えられる）
+        vertical: kind === '和書',
+        continuous: false,
       };
       books.unshift(meta);
       added.push(meta);
@@ -175,6 +183,33 @@ function register() {
   handle('markers:delete', async (id: string) => {
     await store.saveMarkers((await store.listMarkers()).filter((m) => m.id !== id));
     return true;
+  });
+
+  // --- 書き起こし（画像PDF） ---
+  handle('books:pdfBytes', async (id: string) => (await store.readBookPdf(id)).toString('base64'));
+
+  handle('ocr:pages', async (model: string, pages: { page: number; png: string }[]) => {
+    const key = await store.getApiKey();
+    if (!key) throw new Error('APIキーが未設定です。設定画面で入力してください。');
+    const map = await transcribePages(key, model, pages, () => false, () => undefined);
+    return [...map.entries()].map(([page, text]) => ({ page, text }));
+  });
+
+  handle('ocr:commit', async (bookId: string, text: string) => {
+    await store.writeBookText(bookId, text);
+    const books = await store.listBooks();
+    const i = books.findIndex((b) => b.id === bookId);
+    if (i < 0) throw new Error('その本は見つかりませんでした');
+    const kind = guessKind(text);
+    books[i] = {
+      ...books[i],
+      kind,
+      vertical: kind === '和書',
+      source: 'ocr',
+      updated_at: nowIso(),
+    };
+    await store.saveBooks(books);
+    return books[i];
   });
 
   // --- AI ---

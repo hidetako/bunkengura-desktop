@@ -146,7 +146,13 @@ export function App() {
 
       <main className="flex-1 overflow-auto">
         {view.name === 'library' && (
-          <Library books={books} onReload={reloadBooks} onOpen={openBook} onError={setError} />
+          <Library
+            books={books}
+            ocrModel={settings?.ocrModel ?? 'claude-sonnet-5-5'}
+            onReload={reloadBooks}
+            onOpen={openBook}
+            onError={setError}
+          />
         )}
         {view.name === 'vocabulary' && <Vocabulary onError={setError} />}
         {view.name === 'memos' && <Memos books={books} onOpen={openBook} onError={setError} />}

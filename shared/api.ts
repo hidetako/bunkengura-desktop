@@ -4,7 +4,7 @@ import type { BookMeta, DictionaryResult, Marker, Settings, TransMemo, VocabEntr
 export interface BunkenguraApi {
   settings: {
     get(): Promise<Settings>;
-    update(patch: Partial<Pick<Settings, 'model' | 'medicalMode'>>): Promise<Settings>;
+    update(patch: Partial<Pick<Settings, 'model' | 'ocrModel' | 'medicalMode'>>): Promise<Settings>;
     setApiKey(key: string): Promise<Settings>;
     clearApiKey(): Promise<Settings>;
     encryptionAvailable(): Promise<boolean>;
@@ -16,6 +16,14 @@ export interface BunkenguraApi {
     update(id: string, patch: Partial<BookMeta>): Promise<BookMeta>;
     remove(id: string): Promise<boolean>;
     openPdf(id: string): Promise<boolean>;
+    /** PDFの実体を base64 で受け取る（画面側でページを画像に起こすため） */
+    pdfBytes(id: string): Promise<string>;
+  };
+  ocr: {
+    /** ページ画像を書き起こす。1回の呼び出しで数ページぶんまとめて渡す。 */
+    pages(model: string, pages: { page: number; png: string }[]): Promise<{ page: number; text: string }[]>;
+    /** 書き起こした本文を保存して、本の情報を更新する */
+    commit(bookId: string, text: string): Promise<BookMeta>;
   };
   vocab: {
     list(): Promise<VocabEntry[]>;

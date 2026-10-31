@@ -9,7 +9,7 @@ const call = <R>(channel: string, ...args: unknown[]): Promise<R> =>
 const api: BunkenguraApi = {
   settings: {
     get: () => call<Settings>('settings:get'),
-    update: (patch: Partial<Pick<Settings, 'model' | 'medicalMode'>>) =>
+    update: (patch: Partial<Pick<Settings, 'model' | 'ocrModel' | 'medicalMode'>>) =>
       call<Settings>('settings:update', patch),
     setApiKey: (key: string) => call<Settings>('settings:setApiKey', key),
     clearApiKey: () => call<Settings>('settings:clearApiKey'),
@@ -22,6 +22,12 @@ const api: BunkenguraApi = {
     update: (id: string, patch: Partial<BookMeta>) => call<BookMeta>('books:update', id, patch),
     remove: (id: string) => call<boolean>('books:delete', id),
     openPdf: (id: string) => call<boolean>('books:openPdf', id),
+    pdfBytes: (id: string) => call<string>('books:pdfBytes', id),
+  },
+  ocr: {
+    pages: (model: string, pages: { page: number; png: string }[]) =>
+      call<{ page: number; text: string }[]>('ocr:pages', model, pages),
+    commit: (bookId: string, text: string) => call<BookMeta>('ocr:commit', bookId, text),
   },
   vocab: {
     list: () => call<VocabEntry[]>('vocab:list'),
