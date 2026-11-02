@@ -86,13 +86,19 @@ interface StoredSettings {
   model: string;
   ocrModel: string;
   medicalMode: boolean;
+  checkUpdates?: boolean;
   /** safeStorage で暗号化した APIキー（base64）。OSの鍵束に紐づくため他端末では復号できない */
   apiKeyEnc?: string;
   /** 暗号化が使えない環境でのみ使う平文の退避先 */
   apiKeyPlain?: string;
 }
 
-const defaults: StoredSettings = { model: DEFAULT_MODEL, ocrModel: DEFAULT_OCR_MODEL, medicalMode: true };
+const defaults: StoredSettings = {
+  model: DEFAULT_MODEL,
+  ocrModel: DEFAULT_OCR_MODEL,
+  medicalMode: true,
+  checkUpdates: true,
+};
 
 const readSettings = () => readJson<StoredSettings>('settings.json', defaults);
 
@@ -103,11 +109,12 @@ export async function getSettings(): Promise<Settings> {
     model: s.model || DEFAULT_MODEL,
     ocrModel: s.ocrModel || DEFAULT_OCR_MODEL,
     medicalMode: s.medicalMode ?? true,
+    checkUpdates: s.checkUpdates ?? true,
   };
 }
 
 export async function updateSettings(
-  patch: Partial<Pick<Settings, 'model' | 'ocrModel' | 'medicalMode'>>,
+  patch: Partial<Pick<Settings, 'model' | 'ocrModel' | 'medicalMode' | 'checkUpdates'>>,
 ): Promise<Settings> {
   const s = await readSettings();
   await writeJson('settings.json', { ...s, ...patch });

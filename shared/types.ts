@@ -83,6 +83,24 @@ export interface Settings {
   ocrModel: string;
   /** 辞書・翻訳で医学寄りの語義を優先するか */
   medicalMode: boolean;
+  /** 起動時に新しい版が出ていないか確かめる */
+  checkUpdates: boolean;
+}
+
+/** 更新の状態。メインプロセスから画面へ随時送る。 */
+export interface UpdateState {
+  phase:
+    | 'idle'         // まだ確認していない
+    | 'checking'     // 確認中
+    | 'none'         // 最新だった
+    | 'available'    // 新しい版がある（まだ落としていない）
+    | 'downloading'  // 取得中
+    | 'ready'        // 取得済み。再起動すれば当たる
+    | 'error'
+    | 'unsupported'; // 開発中の実行など、更新を扱えない状況
+  version: string;
+  percent?: number;
+  error?: string;
 }
 
 /** 書き起こしの進み具合。メインプロセスから随時送る。 */

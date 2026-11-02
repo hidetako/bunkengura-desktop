@@ -6,6 +6,7 @@ import { Reader } from './pages/Reader';
 import { Vocabulary } from './pages/Vocabulary';
 import { Memos } from './pages/Memos';
 import { SettingsPage } from './pages/Settings';
+import { UpdateBanner } from './components/UpdateBanner';
 
 type View =
   | { name: 'library' }
@@ -116,6 +117,8 @@ export function App() {
         </div>
         {navBtn('settings', '設定')}
       </header>
+
+      <UpdateBanner />
 
       {error && (
         <div

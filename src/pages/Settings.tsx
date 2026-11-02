@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { UpdateState } from '@shared/types';
 import type { Settings } from '@shared/types';
 import { MODEL_OPTIONS, estimateOcrCost } from '@shared/types';
 import { api, errText } from '../lib/bridge';
@@ -16,10 +17,13 @@ export function SettingsPage({
   const [saving, setSaving] = useState(false);
   const [encAvailable, setEncAvailable] = useState(true);
   const [version, setVersion] = useState('');
+  const [upd, setUpd] = useState<UpdateState>({ phase: 'idle', version: '' });
 
   useEffect(() => {
     api.settings.encryptionAvailable().then(setEncAvailable).catch(() => setEncAvailable(false));
     api.app.version().then(setVersion).catch(() => setVersion(''));
+    api.update.state().then(setUpd).catch(() => undefined);
+    return api.update.onState(setUpd);
   }, []);
 
   if (!settings) return <div className="p-4">読み込み中…</div>;
@@ -45,7 +49,9 @@ export function SettingsPage({
     }
   };
 
-  const update = async (patch: Partial<Pick<Settings, 'model' | 'ocrModel' | 'medicalMode'>>) => {
+  const update = async (
+    patch: Partial<Pick<Settings, 'model' | 'ocrModel' | 'medicalMode' | 'checkUpdates'>>,
+  ) => {
     try {
       onChange(await api.settings.update(patch));
     } catch (e) {
@@ -175,6 +181,55 @@ export function SettingsPage({
           />
           <span>医学・医療分野の語義を優先する</span>
         </label>
+      </section>
+
+      <section className="card p-4 mb-4">
+        <h2 className="font-semibold mb-1">更新</h2>
+        <label className="flex items-center gap-2 cursor-pointer mb-3">
+          <input
+            type="checkbox"
+            checked={settings.checkUpdates}
+            onChange={(e) => update({ checkUpdates: e.target.checked })}
+          />
+          <span>起動時に新しい版が出ていないか確かめる</span>
+        </label>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            className="btn"
+            onClick={() => api.update.check().catch((e) => onError(errText(e)))}
+            disabled={upd.phase === 'checking' || upd.phase === 'downloading'}
+          >
+            今すぐ確認
+          </button>
+          <span className="text-sm" style={{ color: 'var(--color-muted)' }}>
+            {upd.phase === 'checking' && '確認しています…'}
+            {upd.phase === 'none' && 'お使いの版が最新です。'}
+            {upd.phase === 'available' && `新しい版 v${upd.version} があります。`}
+            {upd.phase === 'downloading' && `取得中… ${upd.percent ?? 0}%`}
+            {upd.phase === 'ready' && `v${upd.version} の準備ができました。`}
+            {upd.phase === 'unsupported' && '開発中の実行では確認できません。'}
+            {upd.phase === 'error' && (
+              <span style={{ color: 'var(--color-danger)' }}>確認に失敗しました: {upd.error}</span>
+            )}
+          </span>
+
+          {upd.phase === 'available' && (
+            <button className="btn btn-primary" onClick={() => api.update.download()}>
+              ダウンロード
+            </button>
+          )}
+          {upd.phase === 'ready' && (
+            <button className="btn btn-primary" onClick={() => api.update.install()}>
+              再起動して適用
+            </button>
+          )}
+        </div>
+
+        <p className="text-xs mt-2" style={{ color: 'var(--color-muted)' }}>
+          更新は GitHub の Releases から取得します。署名証明書を付けていないため、
+          適用時に Windows の警告が出ることがあります。
+        </p>
       </section>
 
       <p className="text-xs" style={{ color: 'var(--color-muted)' }}>

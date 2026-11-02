@@ -6,12 +6,22 @@ import * as store from './store';
 import { dictionaryLookup, translateText } from './claude';
 import { extractPdfText, guessKind } from './pdf';
 import { assemble, looksLikeImagePdf, transcribePages } from './ocr';
+import {
+  checkForUpdates,
+  downloadUpdate,
+  getUpdateState,
+  installUpdate,
+  updatesSupported,
+} from './updater';
 import type { BookMeta, Marker, TransMemo, VocabEntry } from '../shared/types';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const nowIso = () => new Date().toISOString();
+
+let mainWindow: BrowserWindow | null = null;
+const getWin = () => mainWindow;
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -30,6 +40,10 @@ function createWindow() {
     },
   });
 
+  mainWindow = win;
+  win.on('closed', () => {
+    if (mainWindow === win) mainWindow = null;
+  });
   win.once('ready-to-show', () => win.show());
 
   // 外部リンクは既定のブラウザへ逃がす（アプリ内を乗っ取られないように）
@@ -222,6 +236,15 @@ function register() {
     return translateText(key, model, text, medicalMode);
   });
 
+  // --- 更新 ---
+  handle('update:state', () => getUpdateState());
+  handle('update:check', () => checkForUpdates(getWin, true));
+  handle('update:download', () => downloadUpdate(getWin));
+  handle('update:install', () => {
+    installUpdate();
+    return true;
+  });
+
   // --- その他 ---
   handle('app:version', () => app.getVersion());
   handle('app:openExternal', async (url: string) => {
@@ -231,9 +254,16 @@ function register() {
   });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   register();
   createWindow();
+
+  // 起動時の更新確認。設定で切れるようにしてある。
+  // 画面が出てから少し置いて走らせ、起動の体感を邪魔しない。
+  if (updatesSupported()) {
+    const s = await store.getSettings();
+    if (s.checkUpdates) setTimeout(() => void checkForUpdates(getWin, false), 3000);
+  }
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

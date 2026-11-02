@@ -45,13 +45,20 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows-installer
-          path: release/*.exe
+          path: |
+            release/*.exe
+            release/latest.yml
 
       - name: Releases に貼る
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.name }}
           name: ${{ steps.tag.outputs.name }}
-          files: release/*.exe
+          # latest.yml と .blockmap はアプリ内更新に要る。
+          # これが無いと electron-updater が新しい版を見つけられない。
+          files: |
+            release/*.exe
+            release/*.exe.blockmap
+            release/latest.yml
           draft: false
           generate_release_notes: true

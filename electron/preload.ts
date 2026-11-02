@@ -1,6 +1,7 @@
 // レンダラに渡す唯一の窓口。ここに無いものは画面側から触れない。
 import { contextBridge, ipcRenderer } from 'electron';
-import type { BookMeta, Marker, Settings, TransMemo, VocabEntry } from '../shared/types';
+import type { IpcRendererEvent } from 'electron';
+import type { BookMeta, Marker, Settings, TransMemo, UpdateState, VocabEntry } from '../shared/types';
 import type { BunkenguraApi } from '../shared/api';
 
 const call = <R>(channel: string, ...args: unknown[]): Promise<R> =>
@@ -9,7 +10,7 @@ const call = <R>(channel: string, ...args: unknown[]): Promise<R> =>
 const api: BunkenguraApi = {
   settings: {
     get: () => call<Settings>('settings:get'),
-    update: (patch: Partial<Pick<Settings, 'model' | 'ocrModel' | 'medicalMode'>>) =>
+    update: (patch: Partial<Pick<Settings, 'model' | 'ocrModel' | 'medicalMode' | 'checkUpdates'>>) =>
       call<Settings>('settings:update', patch),
     setApiKey: (key: string) => call<Settings>('settings:setApiKey', key),
     clearApiKey: () => call<Settings>('settings:clearApiKey'),
@@ -53,6 +54,19 @@ const api: BunkenguraApi = {
   app: {
     version: () => call<string>('app:version'),
     openExternal: (url: string) => call<boolean>('app:openExternal', url),
+  },
+  update: {
+    state: () => call<UpdateState>('update:state'),
+    check: () => call<UpdateState>('update:check'),
+    download: () => call<void>('update:download'),
+    install: () => call<void>('update:install'),
+    onState: (cb: (s: UpdateState) => void) => {
+      const h = (_e: IpcRendererEvent, s: UpdateState) => cb(s);
+      ipcRenderer.on('update:state', h);
+      return () => {
+        ipcRenderer.off('update:state', h);
+      };
+    },
   },
 };
 

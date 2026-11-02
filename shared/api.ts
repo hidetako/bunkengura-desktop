@@ -1,10 +1,20 @@
 // preload が公開する API の形。メイン側(実装)とレンダラ側(利用)の両方がここを参照する。
-import type { BookMeta, DictionaryResult, Marker, Settings, TransMemo, VocabEntry } from './types';
+import type {
+  BookMeta,
+  DictionaryResult,
+  Marker,
+  Settings,
+  TransMemo,
+  UpdateState,
+  VocabEntry,
+} from './types';
 
 export interface BunkenguraApi {
   settings: {
     get(): Promise<Settings>;
-    update(patch: Partial<Pick<Settings, 'model' | 'ocrModel' | 'medicalMode'>>): Promise<Settings>;
+    update(
+      patch: Partial<Pick<Settings, 'model' | 'ocrModel' | 'medicalMode' | 'checkUpdates'>>,
+    ): Promise<Settings>;
     setApiKey(key: string): Promise<Settings>;
     clearApiKey(): Promise<Settings>;
     encryptionAvailable(): Promise<boolean>;
@@ -48,5 +58,17 @@ export interface BunkenguraApi {
   app: {
     version(): Promise<string>;
     openExternal(url: string): Promise<boolean>;
+  };
+  update: {
+    /** いまの状態を取り出す（画面を開き直したときの復帰用） */
+    state(): Promise<UpdateState>;
+    /** 新しい版が出ていないか確かめる */
+    check(): Promise<UpdateState>;
+    /** 新しい版を取得する */
+    download(): Promise<void>;
+    /** 取得済みの更新を当てて再起動する */
+    install(): Promise<void>;
+    /** 状態が変わるたびに呼ばれる。戻り値を呼ぶと購読をやめる */
+    onState(cb: (s: UpdateState) => void): () => void;
   };
 }

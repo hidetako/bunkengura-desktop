@@ -4,6 +4,12 @@ productName: Bunkengura
 artifactName: Bunkengura-Setup-${version}.${ext}
 copyright: Copyright (c) 2026 hidetako
 
+# 更新の配り元。electron-updater はここを見て新しい版を探す。
+publish:
+  provider: github
+  owner: hidetako
+  repo: bunkengura-desktop
+
 directories:
   output: release
   buildResources: build
@@ -21,6 +27,7 @@ win:
 
 nsis:
   # 管理者権限なしで入れられるよう、ユーザー単位のインストールにする
+  # （署名の照合を切る設定は electron-updater 側の実行時プロパティなので electron/updater.ts にある）
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
